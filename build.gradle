@@ -1,0 +1,46 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    // Apply the java-library plugin for API and implementation separation.
+    id 'java-library'
+    id("com.github.johnrengelman.shadow") version "8.1.1"
+
+	// auto update dependencies with 'useLatestVersions' task
+	id("se.patrikerdes.use-latest-versions") version "0.2.18"
+	id("com.github.ben-manes.versions") version "0.51.0"
+}
+
+repositories {
+    // Use Maven Central for resolving dependencies.
+    mavenCentral()
+    maven { url "https://s01.oss.sonatype.org/content/repositories/snapshots/" }
+    // google()
+}
+
+dependencies {
+    // use compile only scope to exclude jadx-core and its dependencies from result jar
+    compileOnly(files("jadx-1.5.0-all.jar"))
+    // implementation("io.github.skylot:jadx-core:1.5.0")
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+version = '1.0.1'
+
+tasks {
+    def shadowJar = tasks.withType(com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar) {
+        archiveClassifier.set("") // remove '-all' suffix
+    }
+
+    // copy result jar into "build/dist" directory
+    tasks.register("dist", Copy) {
+        dependsOn shadowJar
+        dependsOn tasks.withType(Jar)
+
+        from shadowJar
+        into layout.buildDirectory.dir("dist")
+    }
+}
