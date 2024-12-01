@@ -2,10 +2,16 @@ package jadx.plugins.acv;
 
 import jadx.api.plugins.options.OptionFlag;
 import jadx.api.plugins.options.impl.BasePluginOptionsBuilder;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 // import java.nio.file.Path;
 import java.nio.file.Paths;
 
 public class ACVOptions extends BasePluginOptionsBuilder {
+
+    private static final Logger LOG = LoggerFactory.getLogger(ACVOptions.class);
 
     private boolean enable;
     private String acvtoolReportPath;
