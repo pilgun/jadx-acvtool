@@ -2,9 +2,8 @@ package jadx.plugins.acv;
 
 import jadx.api.plugins.options.OptionFlag;
 import jadx.api.plugins.options.impl.BasePluginOptionsBuilder;
-import java.nio.file.Path;
+// import java.nio.file.Path;
 import java.nio.file.Paths;
-import jadx.plugins.acv.ACVPlugin;
 
 public class ACVOptions extends BasePluginOptionsBuilder {
 
@@ -22,8 +21,6 @@ public class ACVOptions extends BasePluginOptionsBuilder {
         strOption(ACVPlugin.PLUGIN_ID + ".report-path")
                 .description("ACVTool report directory")
                 .defaultValue(defaultReportPath)
-                // .parser(s -> Paths.get(s).toAbsolutePath().toString())
-                // .formatter(String::toString)
                 .setter(o -> acvtoolReportPath = o)
                 .flags(OptionFlag.PER_PROJECT, OptionFlag.NOT_CHANGING_CODE);
     }
