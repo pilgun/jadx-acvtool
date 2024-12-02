@@ -9,9 +9,7 @@ import jadx.api.plugins.JadxPluginContext;
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
@@ -40,38 +38,51 @@ public class ACVPlugin implements JadxPlugin {
         context.registerOptions(options);
         if (options.isEnable()) {
             System.out.println("ACVTool enabled");
-
+            JadxGuiContext guiContext = context.getGuiContext();
+            if (guiContext != null) {
+                ACVAction acvAction = new ACVAction(context, options);
+                guiContext.addPopupMenuAction("acv report", ACVAction::canActivate, null, acvAction);
+                addButton("ACV", guiContext);
+            }
         } else {
             System.out.println("ACVTool disabled");
         }
-        JadxGuiContext guiContext = context.getGuiContext();
-        if (guiContext != null) {
-            ACVAction acvAction = new ACVAction(context, options);
-            guiContext.addPopupMenuAction("acv report", ACVAction::canActivate, null, acvAction);
 
-            Runnable acvReportScan = () -> {
-                System.out.println("ACVPlugin: Scan ACV Report Classes");
-                String reportPath = options.getAcvtoolReportPath();
-                File reportDirectory = new File(reportPath);
-                File[] directories = reportDirectory.listFiles(File::isDirectory);
-                if (directories != null) {
-                    HashMap<String, String> classMap = new HashMap<>();
-                    for (File directory : directories) {
-                        LOG.info("ACVPlugin: Found directory: {}", directory.getAbsolutePath());
-                        System.out.println("ACVPlugin: Found directory: " + directory.getAbsolutePath());
-                        HashMap<String, String> dexClassMap = findClasses(directory, "");
-                        classMap.putAll(dexClassMap);
-                    }
-                    if (!classMap.isEmpty()) {
-                        addButton("ACV", guiContext, classMap);
-                    }
-                }
-            };
-            guiContext.addMenuAction("Scan ACV Report Classes", acvReportScan);
-        }
     }
 
-    private void addButton(String text, JadxGuiContext guiContext, HashMap<String, String> classMap) {
+    private HashMap<String, String> scanAcvReportClasses(JadxGuiContext guiContext, String acvtoolReportPath) {
+        System.out.println("ACVPlugin: Scan ACV Report Classes");
+        String reportPath = options.getAcvtoolReportPath();
+        File reportDirectory = new File(reportPath);
+        if (!reportDirectory.exists()) {
+            LOG.error("ACVPlugin: ACVTool report directory not found: {}", acvtoolReportPath);
+            JOptionPane.showMessageDialog(guiContext.getMainFrame(),
+                    "ACVTool report directory not found: " + acvtoolReportPath,
+                    "Error", JOptionPane.ERROR_MESSAGE);
+            return null;
+        }
+        File[] directories = reportDirectory.listFiles(File::isDirectory);
+        if (directories != null) {
+            HashMap<String, String> classMap = new HashMap<>();
+            for (File directory : directories) {
+                LOG.info("ACVPlugin: Found directory: {}", directory.getAbsolutePath());
+                System.out.println("ACVPlugin: Found directory: " + directory.getAbsolutePath());
+                HashMap<String, String> dexClassMap = findClasses(directory, "");
+                classMap.putAll(dexClassMap);
+            }
+            if (classMap == null || classMap.isEmpty()) {
+                LOG.error("ACVPlugin: No smali classes found. Check the acv report directory.");
+                JOptionPane.showMessageDialog(guiContext.getMainFrame(),
+                        "ACVPlugin: No smali classes found. Check the acv report directory.",
+                        "Error", JOptionPane.ERROR_MESSAGE);
+                return null;
+            }
+            return classMap;
+        }
+        return null;
+    }
+
+    private void addButton(String text, JadxGuiContext guiContext) {
         String acvButtonName = "acvButton";
         URL res = ACVPlugin.class.getResource("/icons/acv16.png");
         ImageIcon icon = new ImageIcon(res);
@@ -81,7 +92,12 @@ public class ACVPlugin implements JadxPlugin {
         }
         button.setName(acvButtonName);
 
+        HashMap<String, String> classMap = new HashMap<>();
+
         button.addActionListener(e -> {
+            if (classMap.isEmpty()) {
+                classMap.putAll(scanAcvReportClasses(guiContext, acvButtonName));
+            }
             System.out.println("ACV button clicked");
             TabBlueprint selectedTab = ((MainWindow) guiContext.getMainFrame()).getTabsController().getSelectedTab();
             if (selectedTab == null) {
@@ -108,14 +124,13 @@ public class ACVPlugin implements JadxPlugin {
                 e1.printStackTrace();
             }
         });
-        // ActionHandler action = new ActionHandler()
         JToolBar toolbar = (JToolBar) ((MainWindow) guiContext.getMainFrame()).getContentPane().getComponent(2);
         System.out.println(toolbar);
         System.out.println(toolbar.getComponentCount());
         System.out.println((JButton) toolbar.getComponents()[0]);
-        // Check if the button already exists
+        // Check if the button already exists, so we don't get several buttons when
+        // reinstalling the plugin.
         for (Component component : toolbar.getComponents()) {
-            // System.out.println(component);
             if (component instanceof JButton) {
                 JButton existingButton = (JButton) component;
                 if (acvButtonName.equals(existingButton.getName())) {
@@ -141,29 +156,9 @@ public class ACVPlugin implements JadxPlugin {
                     String key = pathPrefix + file.getName().substring(0, file.getName().length() - 11);
                     String value = file.getAbsolutePath();
                     classMap.put(key, value);
-                    // LOG.info("ACVPlugin: Found class: {}-{}", key, value);
                 }
             }
         }
         return classMap;
-    }
-
-    private List<File> findFilesWithExtension(String directoryPath, String extension) {
-        List<File> files = new ArrayList<>();
-        File directory = new File(directoryPath);
-        if (directory.exists() && directory.isDirectory()) {
-            File[] fileList = directory.listFiles();
-            if (fileList != null) {
-                for (File file : fileList) {
-                    if (file.isFile() && file.getName().endsWith(extension)) {
-                        files.add(file);
-                        // System.out.println("ACVPlugin: Found file: " + file.getAbsolutePath());
-                    } else if (file.isDirectory()) {
-                        files.addAll(findFilesWithExtension(file.getAbsolutePath(), extension));
-                    }
-                }
-            }
-        }
-        return files;
     }
 }
