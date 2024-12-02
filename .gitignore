@@ -25,5 +25,6 @@ replay_pid*
 
 .gradle
 .vscode
-
-build
+.DS_Store
+bin/
+build/
