@@ -1,15 +1,17 @@
 # jadx-acvtool
 
-This plugin integrates [ACVTool](https://github.com/piltun/acvtool) instruction coverage report into JaDX-GUI.
-
-Setup the ACVTool report directory in the plugin menu (e.g. /Users/user/acvtool/acvtool_working_dir/report).
+This plugin allows opening [ACVTool](https://github.com/piltun/acvtool) instruction coverage report from JaDX-GUI classes.
 
 ### Installation
 
-This plugin requires [JADX](https://github.com/skylot/jadx) 1.5.0 or greater.
+This plugin requires [JADX](https://github.com/skylot/jadx) 1.5.1 or greater.
 
-- jadx-cli: jadx plugins --install-jar jadx-acvtool.jar
 - jadx-gui: in menu Plugins go to Install plugin and select you plugin jar
+
+### Usage
+
+- Setup the ACVTool report directory in the plugin menu `Preferences -> ACVTool Plugin` (e.g. /Users/user/acvtool/acvtool_working_dir/report).
+- Run `Plugins -> Re-scan ACV Report Classes` every time when you upgraded the acv report directory.
 
 # License
 

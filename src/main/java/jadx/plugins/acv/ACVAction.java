@@ -1,9 +1,15 @@
 package jadx.plugins.acv;
 
 import jadx.api.metadata.ICodeNodeRef;
+import jadx.core.dex.nodes.ClassNode;
+import jadx.core.dex.nodes.ICodeNode;
+
 import jadx.api.plugins.JadxPluginContext;
 
+import java.util.HashMap;
 import java.util.function.Consumer;
+
+import org.jetbrains.kotlin.it.unimi.dsi.fastutil.Hash;
 
 // import org.slf4j.Logger;
 // import org.slf4j.LoggerFactory;
@@ -12,12 +18,14 @@ public class ACVAction implements Consumer<ICodeNodeRef> {
 
     // private static final Logger LOG = LoggerFactory.getLogger(ACVAction.class);
 
-    private final JadxPluginContext context;
     private final ACVOptions options;
+    private final HashMap<String, String> classMap;
+    private final ACVReportFiles acvReportFiles;
 
-    public ACVAction(JadxPluginContext context, ACVOptions options) {
-        this.context = context;
+    public ACVAction(ACVReportFiles acvReportFiles, ACVOptions options, HashMap<String, String> classMap) {
+        this.acvReportFiles = acvReportFiles;
         this.options = options;
+        this.classMap = classMap;
     }
 
     @Override
@@ -26,21 +34,32 @@ public class ACVAction implements Consumer<ICodeNodeRef> {
         if (codeNodeRef == null) {
             return;
         }
+        System.out.println(codeNodeRef);
+        System.out.println(codeNodeRef.getAnnType());
         if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.CLASS) {
-            System.out.println("ACVAction: class");
-        } else if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION) {
-            System.out.println("ACVAction: declaration");
+            String className = ((ClassNode) codeNodeRef).getFullName();
+            if (classMap.isEmpty()) {
+                acvReportFiles.scanAcvReportClasses();
+            }
+            ACVReportFiles.openAcvFile(className, classMap);
+        }
+        if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION) {
+            System.out.println("ACVAction: DECLARATION");
         }
     }
 
     public static Boolean canActivate(ICodeNodeRef codeNodeRef) {
-        System.out.println("ACVPlugin: canActivate");
-        System.out.println(codeNodeRef);
-        System.out.println(codeNodeRef.getAnnType());
-        return Boolean.TRUE;
-        // return codeNodeRef != null && (codeNodeRef.getAnnType() ==
-        // ICodeNodeRef.AnnType.CLASS
-        // || codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION);
-    }
+        if (codeNodeRef == null) {
+            return Boolean.FALSE;
+        }
+        System.out.println((ICodeNode) codeNodeRef);
+        if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.CLASS) {
+            System.out.println("ACVAction: CLASS " + codeNodeRef.getClass().getName());
+            return Boolean.TRUE;
 
+        } else if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION) {
+            System.out.println("ACVAction: DECLARATION" + codeNodeRef.getClass().getName());
+        }
+        return Boolean.FALSE;
+    }
 }
