@@ -6,8 +6,6 @@ import jadx.api.plugins.gui.JadxGuiContext;
 import jadx.gui.ui.MainWindow;
 import jadx.gui.ui.tab.TabBlueprint;
 import jadx.api.plugins.JadxPluginContext;
-import java.io.File;
-import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 
@@ -16,8 +14,6 @@ import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JToolBar;
 import java.awt.Component;
-import java.awt.Desktop;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,9 +35,10 @@ public class ACVPlugin implements JadxPlugin {
 
     @Override
     public void init(JadxPluginContext context) {
+        LOG.info("ACVPlugin init");
         context.registerOptions(options);
         if (options.isEnable()) {
-            System.out.println("ACVTool enabled");
+            LOG.info("ACVTool enabled");
             JadxGuiContext guiContext = context.getGuiContext();
             acvReportFiles = new ACVReportFiles(guiContext, options, classMap);
             if (guiContext != null) {
@@ -51,7 +48,8 @@ public class ACVPlugin implements JadxPlugin {
                 addPluginMenuButton(guiContext, acvReportFiles);
             }
         } else {
-            System.out.println("ACVTool disabled");
+            LOG.info("ACVTool disabled");
+            JOptionPane.showMessageDialog(null, "ACVTool is disabled", "Disabled", JOptionPane.WARNING_MESSAGE);
         }
     }
 

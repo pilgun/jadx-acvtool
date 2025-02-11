@@ -4,19 +4,15 @@ import jadx.api.metadata.ICodeNodeRef;
 import jadx.core.dex.nodes.ClassNode;
 import jadx.core.dex.nodes.ICodeNode;
 
-import jadx.api.plugins.JadxPluginContext;
-
 import java.util.HashMap;
 import java.util.function.Consumer;
 
-import org.jetbrains.kotlin.it.unimi.dsi.fastutil.Hash;
-
-// import org.slf4j.Logger;
-// import org.slf4j.LoggerFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ACVAction implements Consumer<ICodeNodeRef> {
 
-    // private static final Logger LOG = LoggerFactory.getLogger(ACVAction.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ACVAction.class);
 
     private final ACVOptions options;
     private final HashMap<String, String> classMap;
@@ -41,7 +37,12 @@ public class ACVAction implements Consumer<ICodeNodeRef> {
             if (classMap.isEmpty()) {
                 acvReportFiles.scanAcvReportClasses();
             }
-            ACVReportFiles.openAcvFile(className, classMap);
+            if (classMap.containsKey(className)) {
+                ACVReportFiles.openAcvFile(className, classMap);
+            }
+            else{
+                LOG.error()
+            }
         }
         if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION) {
             System.out.println("ACVAction: DECLARATION");
