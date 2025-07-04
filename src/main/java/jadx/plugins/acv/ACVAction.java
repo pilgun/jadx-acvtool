@@ -41,7 +41,7 @@ public class ACVAction implements Consumer<ICodeNodeRef> {
                 ACVReportFiles.openAcvFile(className, classMap);
             }
             else{
-                LOG.error()
+                LOG.error("ACVPlugin: Class not found in ACV report: {}", className);
             }
         }
         if (codeNodeRef.getAnnType() == ICodeNodeRef.AnnType.DECLARATION) {
