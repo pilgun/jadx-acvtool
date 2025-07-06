@@ -3,6 +3,7 @@ package jadx.plugins.acv;
 import java.awt.Color;
 import java.awt.Container;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 import javax.swing.text.BadLocationException;
@@ -27,11 +28,13 @@ public class TabStatesListenerNew implements ITabStatesListener {
     private static final Logger LOG = LoggerFactory.getLogger(TabStatesListenerNew.class);
     private JadxGuiContext guiContext;
     private MainWindow mainWindow;
+    private final HashMap<String, List<String>> executedMethodMap;
     private final List<Object> highlightTags = new ArrayList<>();
 
-    public TabStatesListenerNew(JadxGuiContext guiContext, MainWindow mainWindow) {
+    public TabStatesListenerNew(JadxGuiContext guiContext, MainWindow mainWindow, HashMap<String, List<String>> executedMethodMap) {
         this.guiContext = guiContext;
         this.mainWindow = mainWindow;
+        this.executedMethodMap = executedMethodMap;
     }
 
     @Override
@@ -132,7 +135,14 @@ public class TabStatesListenerNew implements ITabStatesListener {
                         
                         if (javaNode instanceof jadx.api.JavaMethod) {
                             jadx.api.JavaMethod javaMethod = (jadx.api.JavaMethod) javaNode;
-                            
+                            String methodSignature = javaMethod.getMethodNode().getMethodInfo().getShortId();
+                            String classDescriptor = javaMethod.getDeclaringClass().getClassNode().getClassInfo().getAliasFullPath();
+                            String fullClassDesc = "L" + classDescriptor + ";";
+                            LOG.info("{}->{}", fullClassDesc, methodSignature);
+                            // else {
+                            //     LOG.info("Skipping method '{}' as it is not in executedMethodMap", methodSignature);
+                            //     continue; // Skip methods not in executedMethodMap
+                            // }
                             // Find the end of this method declaration line
                             int lineStart = pos;
                             int lineEnd = text.indexOf('\n', pos);
@@ -144,13 +154,24 @@ public class TabStatesListenerNew implements ITabStatesListener {
                             }
                             
                             try {
-                                Object tag = textArea.getHighlighter().addHighlight(lineStart, lineEnd, painter);
-                                highlightTags.add(tag);
-                                highlightCount++;
-                                
-                                String methodSignature = javaMethod.getMethodNode().getMethodInfo().getShortId();
-                                LOG.info("Highlighted method '{}' at position {}-{}", methodSignature, lineStart, lineEnd);
-                                
+                                // LOG.info("Trying: {}->{}", fullClassDesc, methodSignature);
+                                // if(executedMethodMap.containsKey(fullClassDesc)){
+                                //     LOG.info("fullClassDesc matches");
+                                //     LOG.info(String.join(",", executedMethodMap.get(fullClassDesc)));
+                                // } else {
+                                //     LOG.info("fullClassDesc does not match");
+                                // }
+                                if (executedMethodMap.containsKey(fullClassDesc) && 
+                                executedMethodMap.get(fullClassDesc).contains(methodSignature)) {
+                                LOG.info("Highlighting {}->{}", fullClassDesc, methodSignature);
+
+                                    Object tag = textArea.getHighlighter().addHighlight(lineStart, lineEnd, painter);
+                                    highlightTags.add(tag);
+                                    highlightCount++;
+                                    LOG.info("Highlighted method '{}' at position {}-{}", methodSignature, lineStart, lineEnd);
+                                } else {
+                                    LOG.info("Skipping {}->{}", fullClassDesc, methodSignature);
+                                }                             
                                 // Skip ahead to avoid highlighting the same method multiple times
                                 pos = lineEnd;
                                 

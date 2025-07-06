@@ -39,4 +39,8 @@ public class ACVOptions extends BasePluginOptionsBuilder {
         return acvtoolReportPath;
     }
 
+    public String getAcvtoolMethodJsonPath() {
+        String defaultMethodJsonPath = Paths.get(acvtoolReportPath, "methods.json").toString();
+        return defaultMethodJsonPath;
+    }
 }

@@ -11,14 +11,23 @@ import jadx.gui.ui.tab.TabsController;
 import jadx.api.plugins.JadxPluginContext;
 import java.net.URL;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JToolBar;
 import java.awt.Component;
+import java.io.File;
+import java.io.FileReader;
+import java.lang.reflect.Type;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
 public class ACVPlugin implements JadxPlugin {
     private static final Logger LOG = LoggerFactory.getLogger(ACVPlugin.class);
@@ -27,7 +36,10 @@ public class ACVPlugin implements JadxPlugin {
 
     private final ACVOptions options = new ACVOptions();
     private final HashMap<String, String> classMap = new HashMap<>();
+    private final HashMap<String, List<String>> executedMethodMap = new HashMap<>();
     private ACVReportFiles acvReportFiles;
+    private TabStatesListenerNew tabStatesListener;
+    private TabsController tabsController;
 
     @Override
     public JadxPluginInfo getPluginInfo() {
@@ -49,11 +61,39 @@ public class ACVPlugin implements JadxPlugin {
                 guiContext.addPopupMenuAction("ACV: Open Class", ACVAction::canActivate, null, acvAction);
                 addButton(guiContext);
                 addPluginMenuButton(guiContext, acvReportFiles);
+                readJsonClassMethodMap();
                 setupAutoHighlighting(guiContext);
             }
         } else {
             LOG.info("ACVTool disabled");
             JOptionPane.showMessageDialog(null, "ACVTool is disabled", "Disabled", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+    private void readJsonClassMethodMap() {
+        LOG.info("Reading JSON class method map");
+        String jsonPath = this.options.getAcvtoolMethodJsonPath();
+        if (jsonPath == null || jsonPath.trim().isEmpty()) {
+            LOG.warn("ACV method JSON path not configured");
+            return;
+        }
+        File jsonFile = new File(jsonPath);
+        if (!jsonFile.exists()) {
+            LOG.error("ACV method JSON file not found: {}", jsonPath);
+            return;
+        }
+        try (FileReader reader = new FileReader(jsonFile)) {
+            Gson gson = new Gson();
+            Type mapType = new TypeToken<Map<String, List<String>>>(){}.getType();
+            executedMethodMap.putAll(gson.fromJson(reader, mapType));
+            // for (Map.Entry<String, List<String>> entry : executedMethodMap.entrySet()) {
+            //     String className = entry.getKey();
+            //     List<String> methods = entry.getValue();
+            //     LOG.info("Class: {}, Methods: {}", className, methods);
+            // }
+            LOG.info("ACV method JSON file loaded successfully: {}", jsonPath);
+        } catch (Exception e) {
+            LOG.error("Error reading ACV method JSON file: {}", jsonPath, e);
         }
     }
 
@@ -64,9 +104,9 @@ public class ACVPlugin implements JadxPlugin {
             GuiPluginContext pluginContext = (GuiPluginContext) guiContext;
             CommonGuiPluginsContext commonContext = pluginContext.getCommonContext();
             MainWindow mainWindow = commonContext.getMainWindow();
-            TabsController tabsController = mainWindow.getTabsController();
-            TabStatesListenerNew tabStatesListener = new TabStatesListenerNew(guiContext, mainWindow);
-            tabsController.addListener(tabStatesListener);
+            this.tabsController = mainWindow.getTabsController();
+            this.tabStatesListener = new TabStatesListenerNew(guiContext, mainWindow, this.executedMethodMap);
+            this.tabsController.addListener(this.tabStatesListener);
             LOG.info("Added improved tab states listener for method highlighting");
         }
     }
@@ -125,6 +165,19 @@ public class ACVPlugin implements JadxPlugin {
         }
         toolbar.add(button);
         toolbar.revalidate();
+    }
+
+    public void dispose() {
+        if (this.tabsController != null) {
+            this.tabsController.removeListener(this.tabStatesListener);
+            this.tabsController.closeAllTabs();
+            this.tabsController = null;
+        }
+        if (this.tabStatesListener != null) {
+            this.tabStatesListener.cleanup();
+            this.tabStatesListener = null;
+        }
+        LOG.info("ACVPlugin disposed");
     }
 
 }
