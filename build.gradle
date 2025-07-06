@@ -12,7 +12,7 @@ repositories {
 dependencies {
     // use compile only scope to exclude jadx-core and its dependencies from result jar
     // find the jar in the original repo release
-    compileOnly(files("jadx-1.5.1-all.jar"))
+    compileOnly(files("jadx-1.5.2-all.jar"))
     // compileOnly("io.github.skylot:jadx-core:1.5.1")
 
 

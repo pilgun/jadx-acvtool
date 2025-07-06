@@ -3,8 +3,11 @@ package jadx.plugins.acv;
 import jadx.api.plugins.JadxPlugin;
 import jadx.api.plugins.JadxPluginInfo;
 import jadx.api.plugins.gui.JadxGuiContext;
+import jadx.gui.plugins.context.CommonGuiPluginsContext;
+import jadx.gui.plugins.context.GuiPluginContext;
 import jadx.gui.ui.MainWindow;
 import jadx.gui.ui.tab.TabBlueprint;
+import jadx.gui.ui.tab.TabsController;
 import jadx.api.plugins.JadxPluginContext;
 import java.net.URL;
 import java.util.HashMap;
@@ -46,10 +49,25 @@ public class ACVPlugin implements JadxPlugin {
                 guiContext.addPopupMenuAction("ACV: Open Class", ACVAction::canActivate, null, acvAction);
                 addButton(guiContext);
                 addPluginMenuButton(guiContext, acvReportFiles);
+                setupAutoHighlighting(guiContext);
             }
         } else {
             LOG.info("ACVTool disabled");
             JOptionPane.showMessageDialog(null, "ACVTool is disabled", "Disabled", JOptionPane.WARNING_MESSAGE);
+        }
+    }
+
+
+    private void setupAutoHighlighting(JadxGuiContext guiContext) {
+        if (guiContext instanceof GuiPluginContext){
+            LOG.info("instance of GuiPluginContext");
+            GuiPluginContext pluginContext = (GuiPluginContext) guiContext;
+            CommonGuiPluginsContext commonContext = pluginContext.getCommonContext();
+            MainWindow mainWindow = commonContext.getMainWindow();
+            TabsController tabsController = mainWindow.getTabsController();
+            TabStatesListenerNew tabStatesListener = new TabStatesListenerNew(guiContext, mainWindow);
+            tabsController.addListener(tabStatesListener);
+            LOG.info("Added improved tab states listener for method highlighting");
         }
     }
 

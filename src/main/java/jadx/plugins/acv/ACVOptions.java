@@ -20,7 +20,7 @@ public class ACVOptions extends BasePluginOptionsBuilder {
     public void registerOptions() {
         boolOption(ACVPlugin.PLUGIN_ID + ".enable")
                 .description("Enable ACVTool view")
-                .defaultValue(false)
+                .defaultValue(true)
                 .setter(o -> enable = o);
         String defaultReportPath = Paths.get(System.getProperty("user.home"), "acvtool", "acvtool_working_dir",
                 "report").toString();
