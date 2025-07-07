@@ -18,6 +18,7 @@ import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JOptionPane;
 import javax.swing.JToolBar;
+
 import java.awt.Component;
 import java.io.File;
 import java.io.FileReader;
@@ -40,6 +41,8 @@ public class ACVPlugin implements JadxPlugin {
     private ACVReportFiles acvReportFiles;
     private TabStatesListenerNew tabStatesListener;
     private TabsController tabsController;
+    private JButton button;
+    private JToolBar toolbar;
 
     @Override
     public JadxPluginInfo getPluginInfo() {
@@ -122,14 +125,14 @@ public class ACVPlugin implements JadxPlugin {
         String acvButtonName = "acvButton";
         URL res = ACVPlugin.class.getResource("/icons/acv16.png");
         ImageIcon icon = new ImageIcon(res);
-        JButton button = new JButton();
+        this.button = new JButton();
         if (icon != null) {
-            button.setIcon(icon);
+            this.button.setIcon(icon);
         }
-        button.setToolTipText("ACV");
-        button.setName(acvButtonName);
+        this.button.setToolTipText("ACV");
+        this.button.setName(acvButtonName);
 
-        button.addActionListener(e -> {
+        this.button.addActionListener(e -> {
             if (classMap.isEmpty()) {
                 acvReportFiles.scanAcvReportClasses();
             }
@@ -151,23 +154,30 @@ public class ACVPlugin implements JadxPlugin {
             }
             ACVReportFiles.openAcvFile(rawName, classMap);
         });
-        JToolBar toolbar = (JToolBar) ((MainWindow) guiContext.getMainFrame()).getContentPane().getComponent(2);
+        this.toolbar = (JToolBar) ((MainWindow) guiContext.getMainFrame()).getContentPane().getComponent(2);
         // Check if the button already exists, so we don't get several buttons when
         // reinstalling the plugin.
-        for (Component component : toolbar.getComponents()) {
+        for (Component component : this.toolbar.getComponents()) {
             if (component instanceof JButton) {
                 JButton existingButton = (JButton) component;
                 if (acvButtonName.equals(existingButton.getName())) {
                     System.out.println("ACVTool button already exists, removing it");
-                    toolbar.remove(component);
+                    this.toolbar.remove(component);
                 }
             }
         }
-        toolbar.add(button);
-        toolbar.revalidate();
+        int totalComponents = this.toolbar.getComponentCount();
+        LOG.info("Total components in toolbar: {}", totalComponents);
+        int insertIndex = totalComponents - 2;
+        if (insertIndex < 0) {
+            insertIndex = totalComponents;  // Add at the end if something's wrong
+        }
+        this.toolbar.add(this.button, insertIndex);
+        this.toolbar.revalidate();
     }
 
     public void dispose() {
+        // dispose is not called in jadx
         if (this.tabsController != null) {
             this.tabsController.removeListener(this.tabStatesListener);
             this.tabsController.closeAllTabs();
@@ -176,6 +186,11 @@ public class ACVPlugin implements JadxPlugin {
         if (this.tabStatesListener != null) {
             this.tabStatesListener.cleanup();
             this.tabStatesListener = null;
+        }
+        if(this.toolbar!= null && this.button != null) {
+            // Remove the button from the toolbar
+            LOG.info("Removing ACVPlugin button from toolbar");
+            this.toolbar.remove(this.button);
         }
         LOG.info("ACVPlugin disposed");
     }
